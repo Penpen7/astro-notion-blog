@@ -3,6 +3,7 @@ import {
   getPostsByPage,
   getRankedPosts,
   getAllTags,
+  getAllPosts,
   getNumberOfPages,
   getPostsByPage,
 } from '../../../lib/notion/client.ts'
@@ -18,6 +19,7 @@ import Pagination from '../../../components/Pagination.astro'
 import BlogPostsLink from '../../../components/BlogPostsLink.astro'
 import BlogTagsLink from '../../../components/BlogTagsLink.astro'
 import styles from '../../../styles/blog.module.css'
+import {NUMBER_OF_POSTS_PER_PAGE} from '../../../server-constants.ts'
 
 export async function getStaticPaths() {
   const numberOfPages = await getNumberOfPages()
@@ -31,8 +33,9 @@ export async function getStaticPaths() {
 
 const { page } = Astro.params
 
-const [posts, rankedPosts, tags, numberOfPages] = await Promise.all([
+const [posts, recentPosts, rankedPosts, tags, numberOfPages] = await Promise.all([
   getPostsByPage(parseInt(page, 10)),
+  getAllPosts(NUMBER_OF_POSTS_PER_PAGE),
   getRankedPosts(),
   getAllTags(),
   getNumberOfPages(),
@@ -72,8 +75,8 @@ const [posts, rankedPosts, tags, numberOfPages] = await Promise.all([
   </div>
 
   <div slot="aside" class={styles.aside}>
-    <BlogPostsLink heading="Recommended" posts={rankedPosts} />
-    <BlogTagsLink heading="Categories" tags={tags} />
+    <BlogPostsLink heading="最新の記事" posts={recentPosts} />
+    <BlogTagsLink heading="カテゴリ" tags={tags} />
   </div>
 </Layout>
 
