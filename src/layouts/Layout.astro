@@ -98,7 +98,8 @@ if (database.Icon && database.Icon.Type === 'file') {
                 <img
                   src={customIconURL}
                   class="custom-icon"
-                  alt="Site icon image"
+                  height="42px"
+                  width="42px"
                 />
                 {database.Title}
               </>
@@ -111,6 +112,7 @@ if (database.Icon && database.Icon.Type === 'file') {
       <div class="description">
         {database.Description}
       </div>
+      <slot name="read_meter" />
     </header>
     <div class="container">
       <div>
@@ -211,6 +213,11 @@ if (database.Icon && database.Icon.Type === 'file') {
     flex-wrap: wrap;
     flex-direction: column;
     align-content: center;
+    position: sticky;
+    background-color: #ffffff;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   }
   header h1 {
     font-weight: 700;
