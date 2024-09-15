@@ -42,13 +42,14 @@ export async function getStaticPaths() {
 
 const { tag, page } = Astro.params
 
-const [posts, latestPosts, rankedPosts, tags, numberOfPages] = await Promise.all([
-  getPostsByTagAndPage(tag, parseInt(page, 10)),
-  getPosts(NUMBER_OF_POSTS_PER_PAGE),
-  getRankedPosts(),
-  getAllTags(),
-  getNumberOfPagesByTag(tag),
-])
+const [posts, latestPosts, rankedPosts, tags, numberOfPages] =
+  await Promise.all([
+    getPostsByTagAndPage(tag, parseInt(page, 10)),
+    getPosts(NUMBER_OF_POSTS_PER_PAGE),
+    getRankedPosts(),
+    getAllTags(),
+    getNumberOfPagesByTag(tag),
+  ])
 
 const currentTag = posts[0].Tags.find((t) => t.name === tag)
 ---
