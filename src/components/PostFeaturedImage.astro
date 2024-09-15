@@ -23,17 +23,18 @@ if (post.FeaturedImage && post.FeaturedImage.Url) {
     <div class="post-featured-image">
       <img src={image} alt="Featured image of the post" />
     </div>
-):
+  ) : (
     <div class="post-featured-image">
       <img src="/default-og-image.png" alt="Default image" />
     </div>
+  )
 }
 
 <style>
   .post-featured-image {
     padding: 0 0 0.2rem;
-    max-width:25%;
-    min-width:10rem;
+    max-width: 25%;
+    min-width: 10rem;
   }
   .post-featured-image img {
     display: block;
