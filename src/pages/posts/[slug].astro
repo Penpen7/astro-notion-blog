@@ -97,18 +97,12 @@ if (post.FeaturedImage && post.FeaturedImage.Url) {
   ogImage = new URL(filePath(new URL(post.FeaturedImage.Url)), Astro.site)
 }
 
-console.log('hello')
 const n2zm = new NotionToZennMarkdown(process.env.NOTION_API_SECRET as string)
-console.log('generated md')
 let md = await n2zm.pageToZennMarkdown(post.PageId)
-md = md.replaceAll('\t:::', ':::')
-console.log(md)
 const notemd = markdownHtml(md, {
   embedOrigin: 'https://embed.zenn.studio',
 })
-//const notemd = markdownHtml(md )
-// ファイルに書き込む
-fs.writeFileSync('test.html', notemd)
+fs.writeFileSync('test.md', md)
 ---
 
 <Layout
