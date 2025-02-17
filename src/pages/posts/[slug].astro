@@ -27,6 +27,9 @@ import BlogTagsLink from '../../components/BlogTagsLink.astro'
 import styles from '../../styles/blog.module.css'
 import PostFeaturedImage from '../../components/PostFeaturedImage.astro'
 import ReadMeter from '../../components/ReadMeter.astro'
+import NotionToZennMarkdown from 'notion-to-zenn-md'
+import markdownHtml from 'zenn-markdown-html'
+import 'zenn-content-css'
 
 export async function getStaticPaths() {
   const posts = await getAllPosts()
@@ -93,6 +96,19 @@ let ogImage = ''
 if (post.FeaturedImage && post.FeaturedImage.Url) {
   ogImage = new URL(filePath(new URL(post.FeaturedImage.Url)), Astro.site)
 }
+
+console.log('hello')
+const n2zm = new NotionToZennMarkdown(process.env.NOTION_API_SECRET as string)
+console.log('generated md')
+let md = await n2zm.pageToZennMarkdown(post.PageId)
+md = md.replaceAll('\t:::', ':::')
+console.log(md)
+const notemd = markdownHtml(md, {
+  embedOrigin: 'https://embed.zenn.studio',
+})
+//const notemd = markdownHtml(md )
+// ファイルに書き込む
+fs.writeFileSync('test.html', notemd)
 ---
 
 <Layout
@@ -107,7 +123,7 @@ if (post.FeaturedImage && post.FeaturedImage.Url) {
       <PostDate post={post} />
       <PostTags post={post} />
       <PostTitle post={post} enableLink={false} />
-      <PostBody blocks={blocks} />
+      <div class="znc" set:html={notemd} />
       <PostTags post={post} />
 
       <footer>
