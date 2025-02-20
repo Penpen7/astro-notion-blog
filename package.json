@@ -33,7 +33,6 @@
     "metascraper-image": "^5.34.4",
     "metascraper-title": "^5.34.4",
     "notion-to-zenn-md": "git+https://github.com/Penpen7/notion-to-zenn-md.git#6fdfcdc52bf683886d48980d0223a4d1af4fc989",
-    "notion-to-markdown": "git+https://github.com/salvage0707/notion-md-converter.git",
     "prismjs": "^1.29.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
