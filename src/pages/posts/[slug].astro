@@ -99,6 +99,16 @@ if (post.FeaturedImage && post.FeaturedImage.Url) {
 
 const n2zm = new NotionToZennMarkdown(process.env.NOTION_API_SECRET as string)
 let md = await n2zm.pageToZennMarkdown(post.PageId)
+md = md
+  .split('\n')
+  .map((line) => {
+    const trimmed_line = line.trim()
+    if (trimmed_line.startsWith('https://github.com/')) {
+      return trimmed_line
+    }
+    return line
+  })
+  .join('\n')
 const notemd = markdownHtml(md, {
   embedOrigin: 'https://embed.zenn.studio',
 })
