@@ -99,13 +99,31 @@ if (post.FeaturedImage && post.FeaturedImage.Url) {
 
 const n2zm = new NotionToZennMarkdown(process.env.NOTION_API_SECRET as string)
 let md = await n2zm.pageToZennMarkdown(post.PageId)
+let isMessage = false
 md = md
   .split('\n')
   .map((line) => {
     const trimmed_line = line.trim()
+
     if (trimmed_line.startsWith('https://github.com/')) {
-      return trimmed_line
+      // return trimmed_line
     }
+
+    if (trimmed_line == ':::message') {
+      isMessage = true
+    }
+
+    if (isMessage) {
+      if (trimmed_line == ':::') {
+        isMessage = false
+      }
+      // return line.trimStart()
+    }
+
+    if (trimmed_line == '') {
+      return ''
+    }
+
     return line
   })
   .join('\n')
