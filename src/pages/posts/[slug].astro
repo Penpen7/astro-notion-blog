@@ -125,8 +125,8 @@ const createLinkPreview = () => {
   })
 }
 const createMarkdownBookmarkTransformer = () => {
-  return createBasicBookmarkTransformer((b) => {
-    return `@[card](${b.block.bookmark.url})`
+  return createBasicBookmarkTransformer(({ block }) => {
+    return `@[card](${block.bookmark.url})`
   })
 }
 
