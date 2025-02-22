@@ -27,8 +27,14 @@ import BlogTagsLink from '../../components/BlogTagsLink.astro'
 import styles from '../../styles/blog.module.css'
 import PostFeaturedImage from '../../components/PostFeaturedImage.astro'
 import ReadMeter from '../../components/ReadMeter.astro'
-import NotionToZennMarkdown from 'notion-to-zenn-md'
-import markdownHtml from 'zenn-markdown-html'
+import markdownHtmlLib from 'zenn-markdown-html'
+import {
+  $getPageFullContent,
+  MarkdownUtils,
+  createBasicLinkPreviewTransformer,
+} from '@notion-md-converter/core'
+import { NotionZennMarkdownConverter } from '@notion-md-converter/zenn'
+import { Client } from '@notionhq/client'
 import 'zenn-content-css'
 
 export async function getStaticPaths() {
@@ -67,8 +73,8 @@ const fileAtacchedBlocks = extractTargetBlocks('image', blocks)
 await Promise.all(
   fileAtacchedBlocks
     .map(async (block) => {
-      const expiryTime = (block.Image || block.File).File.ExpiryTime
-      if (Date.parse(expiryTime) > Date.now()) {
+      const expiryTime = (block.Image || block.File)?.File?.ExpiryTime
+      if (expiryTime && Date.parse(expiryTime) > Date.now()) {
         return Promise.resolve(block)
       }
       return getBlock(block.Id)
@@ -77,7 +83,7 @@ await Promise.all(
       promise.then((block) => {
         let url!: URL
         try {
-          url = new URL((block.Image || block.File).File.Url)
+          url = new URL((block.Image || block.File)!.File!.Url)
         } catch (err) {
           console.log('Invalid file URL')
           return Promise.reject()
@@ -92,41 +98,32 @@ const currentPostIndex = allPosts.findIndex((post) => post.Slug === slug)
 const prevPost = allPosts[currentPostIndex + 1]
 const nextPost = allPosts[currentPostIndex - 1]
 
-let ogImage = ''
+let ogImage = null
 if (post.FeaturedImage && post.FeaturedImage.Url) {
   ogImage = new URL(filePath(new URL(post.FeaturedImage.Url)), Astro.site)
 }
 
-const n2zm = new NotionToZennMarkdown(process.env.NOTION_API_SECRET as string)
-let md = await n2zm.pageToZennMarkdown(post.PageId)
-let isMessage = false
-md = md
-  .split('\n')
-  .map((line) => {
-    const trimmed_line = line.trim()
+const client = new Client({
+  auth: process.env.NOTION_API_SECRET,
+})
 
-    if (trimmed_line.startsWith('https://github.com/')) {
-      // return trimmed_line
-    }
-
-    if (trimmed_line == ':::message') {
-      isMessage = true
-    }
-
-    if (isMessage) {
-      if (trimmed_line == ':::') {
-        isMessage = false
-      }
-      // return line.trimStart()
-    }
-
-    if (trimmed_line == '') {
-      return ''
-    }
-
-    return line
+const content = await $getPageFullContent(client, post.PageId)
+const createLinkPreview = () => {
+  return createBasicLinkPreviewTransformer(({ block }) => {
+    return MarkdownUtils.wrapWithNewLines(block.link_preview.url)
   })
-  .join('\n')
+}
+const executor = new NotionZennMarkdownConverter({
+  link_preview: createLinkPreview(),
+})
+const md = executor.execute(content)
+
+type MarkdownHtml = typeof markdownHtmlLib
+type MarkdownHtmlAtBuild = { default: MarkdownHtml }
+const markdownHtml =
+  typeof markdownHtmlLib === 'function'
+    ? markdownHtmlLib
+    : (markdownHtmlLib as MarkdownHtmlAtBuild).default
 const notemd = markdownHtml(md, {
   embedOrigin: 'https://embed.zenn.studio',
 })
