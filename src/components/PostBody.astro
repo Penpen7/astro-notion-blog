@@ -5,13 +5,17 @@ import {
   MarkdownUtils,
   createBasicBookmarkTransformer,
   createBasicLinkPreviewTransformer,
+  createFileAdapter,
 } from '@notion-md-converter/core'
 import {
   NotionZennMarkdownConverter,
   ZennMarkdownUtils,
+  createZennMarkdownImageTransformer,
 } from '@notion-md-converter/zenn'
 import { Client } from '@notionhq/client'
 import 'zenn-content-css'
+import { downloadFile } from '../lib/notion/client'
+import { filePath } from '../lib/blog-helpers'
 
 export interface Props {
   pageId: string
@@ -42,9 +46,18 @@ const createMarkdownBookmarkTransformer = () => {
   })
 }
 
+let urls: string[] = []
+const f = createFileAdapter(({ url }) => {
+  // urlに配置されている画像ファイルをダウンロードしてpublicディレクトリ配下に保存、そのパスを返す
+  urls.push(url)
+
+  return { url: filePath(new URL(url)) }
+})
+
 const executor = new NotionZennMarkdownConverter({
   bookmark: createMarkdownBookmarkTransformer(),
   link_preview: createLinkPreview(),
+  image: createZennMarkdownImageTransformer({ fileAdapter: f }),
 })
 
 let md = executor.execute(content)
@@ -70,7 +83,8 @@ const markdownHtml =
 const notemd = markdownHtml(md, {
   embedOrigin: 'https://embed.zenn.studio',
 })
-// fs.writeFileSync('test.md', md)
+
+await Promise.all(urls.map((url) => downloadFile(new URL(url))))
 ---
 
 <div class="znc" set:html={notemd} />
