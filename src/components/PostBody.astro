@@ -28,16 +28,14 @@ const client = new Client({
 })
 
 const content = await $getPageFullContent(client, pageId)
+
 const createLinkPreview = () => {
   return createBasicLinkPreviewTransformer(({ block }) => {
-    console.log(block.link_preview.url)
     if (block.link_preview.url.startsWith('https://github.com')) {
       return MarkdownUtils.wrapWithNewLines(block.link_preview.url)
     }
 
-    const embed = ZennMarkdownUtils.embedByURL(block.link_preview.url).result
-    console.log(embed)
-    return embed
+    return ZennMarkdownUtils.embedByURL(block.link_preview.url).result
   })
 }
 const createMarkdownBookmarkTransformer = () => {
@@ -48,7 +46,6 @@ const createMarkdownBookmarkTransformer = () => {
 
 let urls: string[] = []
 const f = createFileAdapter(({ url }) => {
-  // urlに配置されている画像ファイルをダウンロードしてpublicディレクトリ配下に保存、そのパスを返す
   urls.push(url)
 
   return { url: filePath(new URL(url)) }
@@ -60,9 +57,8 @@ const executor = new NotionZennMarkdownConverter({
   image: createZennMarkdownImageTransformer({ fileAdapter: f }),
 })
 
-let md = executor.execute(content)
-
-md = md
+const md = executor
+  .execute(content)
   .split('\n')
   .map((line) => {
     const trimmed = line.trim()
