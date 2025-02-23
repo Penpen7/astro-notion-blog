@@ -2,15 +2,15 @@
 import markdownHtmlLib from 'zenn-markdown-html'
 import {
   $getPageFullContent,
-  MarkdownUtils,
   createBasicBookmarkTransformer,
   createBasicLinkPreviewTransformer,
+  createBasicImageTransformer,
+  MarkdownUtils,
   createFileAdapter,
 } from '@notion-md-converter/core'
 import {
   NotionZennMarkdownConverter,
   ZennMarkdownUtils,
-  createZennMarkdownImageTransformer,
 } from '@notion-md-converter/zenn'
 import { Client } from '@notionhq/client'
 import 'zenn-content-css'
@@ -51,10 +51,28 @@ const f = createFileAdapter(({ url }) => {
   return { url: filePath(new URL(url)) }
 })
 
+const createZennMarkdownImageTransformer = () => {
+  return createBasicImageTransformer(({ block }) => {
+    const fileAdapter = f
+    const { url } = fileAdapter(block.image)
+    const image = (text: string, url: string, caption = ''): string => {
+      if (caption) {
+        return `![${text}](${url} =600x)\n*${caption}*`
+      }
+      return `![${text}](${url} =600x)`
+    }
+    const caption =
+      block.image.caption.length > 0
+        ? MarkdownUtils.richTextsToMarkdown(block.image.caption)
+        : ''
+    return image(caption, url, caption)
+  })
+}
+
 const executor = new NotionZennMarkdownConverter({
   bookmark: createMarkdownBookmarkTransformer(),
   link_preview: createLinkPreview(),
-  image: createZennMarkdownImageTransformer({ fileAdapter: f }),
+  image: createZennMarkdownImageTransformer(),
 })
 
 const md = executor
@@ -84,9 +102,3 @@ await Promise.all(urls.map((url) => downloadFile(new URL(url))))
 ---
 
 <div class="znc" set:html={notemd} />
-
-<style>
-  .post-body {
-    padding: 0.5rem 0;
-  }
-</style>
