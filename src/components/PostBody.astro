@@ -7,6 +7,7 @@ import {
   createBasicImageTransformer,
   MarkdownUtils,
   createFileAdapter,
+  createBasicVideoTransformer,
 } from '@notion-md-converter/core'
 import {
   NotionZennMarkdownConverter,
@@ -38,6 +39,17 @@ const createLinkPreview = () => {
     return ZennMarkdownUtils.embedByURL(block.link_preview.url).result
   })
 }
+
+const createVideoTransformer = () => {
+  return createBasicVideoTransformer(({ block }) => {
+    if (block.video.type === 'external') {
+      return MarkdownUtils.wrapWithNewLines(block.video.external.url)
+    }
+
+    return ''
+  })
+}
+
 const createMarkdownBookmarkTransformer = () => {
   return createBasicBookmarkTransformer(({ block }) => {
     return `@[card](${block.bookmark.url})`
@@ -73,6 +85,7 @@ const executor = new NotionZennMarkdownConverter({
   bookmark: createMarkdownBookmarkTransformer(),
   link_preview: createLinkPreview(),
   image: createZennMarkdownImageTransformer(),
+  video: createVideoTransformer(),
 })
 
 const md = executor
@@ -80,7 +93,10 @@ const md = executor
   .split('\n')
   .map((line) => {
     const trimmed = line.trim()
-    if (trimmed.startsWith('https://github.com')) {
+    if (
+      trimmed.startsWith('https://github.com') ||
+      trimmed.startsWith('https://www.youtube.com')
+    ) {
       return trimmed
     }
 
