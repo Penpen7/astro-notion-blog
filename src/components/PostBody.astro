@@ -1,20 +1,124 @@
 ---
-import { Block } from '../lib/interfaces.ts'
-import NotionBlocks from './NotionBlocks.astro'
+import markdownHtmlLib from 'zenn-markdown-html'
+import {
+  $getPageFullContent,
+  createBasicBookmarkTransformer,
+  createBasicLinkPreviewTransformer,
+  createBasicImageTransformer,
+  MarkdownUtils,
+  createFileAdapter,
+  createBasicVideoTransformer,
+} from '@notion-md-converter/core'
+import {
+  NotionZennMarkdownConverter,
+  ZennMarkdownUtils,
+} from '@notion-md-converter/zenn'
+import { Client } from '@notionhq/client'
+import 'zenn-content-css'
+import { downloadFile } from '../lib/notion/client'
+import { filePath } from '../lib/blog-helpers'
 
 export interface Props {
-  blocks: Block[]
+  pageId: string
 }
 
-const { blocks } = Astro.props
+const { pageId } = Astro.props
+
+const client = new Client({
+  auth: process.env.NOTION_API_SECRET,
+})
+
+const content = await $getPageFullContent(client, pageId)
+
+const createLinkPreview = () => {
+  return createBasicLinkPreviewTransformer(({ block }) => {
+    if (block.link_preview.url.startsWith('https://github.com')) {
+      return MarkdownUtils.wrapWithNewLines(block.link_preview.url)
+    }
+
+    return ZennMarkdownUtils.embedByURL(block.link_preview.url).result
+  })
+}
+
+const createVideoTransformer = () => {
+  return createBasicVideoTransformer(({ block }) => {
+    if (block.video.type === 'external') {
+      return MarkdownUtils.wrapWithNewLines(block.video.external.url)
+    }
+
+    return ''
+  })
+}
+
+const createMarkdownBookmarkTransformer = () => {
+  return createBasicBookmarkTransformer(({ block }) => {
+    return `@[card](${block.bookmark.url})`
+  })
+}
+
+let urls: string[] = []
+const f = createFileAdapter(({ url }) => {
+  urls.push(url)
+
+  return { url: filePath(new URL(url)) }
+})
+
+const createZennMarkdownImageTransformer = () => {
+  return createBasicImageTransformer(({ block }) => {
+    const fileAdapter = f
+    const { url } = fileAdapter(block.image)
+    const image = (text: string, url: string, caption = ''): string => {
+      if (caption) {
+        return `![${text}](${url} =600x)\n*${caption}*`
+      }
+      return `![${text}](${url} =600x)`
+    }
+    const caption =
+      block.image.caption.length > 0
+        ? MarkdownUtils.richTextsToMarkdown(block.image.caption)
+        : ''
+    return image(caption, url, caption)
+  })
+}
+
+const executor = new NotionZennMarkdownConverter({
+  bookmark: createMarkdownBookmarkTransformer(),
+  link_preview: createLinkPreview(),
+  image: createZennMarkdownImageTransformer(),
+  video: createVideoTransformer(),
+})
+
+const md = executor
+  .execute(content)
+  .split('\n')
+  .map((line) => {
+    const trimmed = line.trim()
+    if (
+      trimmed.startsWith('https://github.com') ||
+      trimmed.startsWith('https://www.youtube.com')
+    ) {
+      return trimmed
+    }
+
+    return line
+  })
+  .join('\n')
+
+type MarkdownHtml = typeof markdownHtmlLib
+type MarkdownHtmlAtBuild = { default: MarkdownHtml }
+const markdownHtml =
+  typeof markdownHtmlLib === 'function'
+    ? markdownHtmlLib
+    : (markdownHtmlLib as MarkdownHtmlAtBuild).default
+const notemd = markdownHtml(md, {
+  embedOrigin: 'https://embed.zenn.studio',
+})
+
+await Promise.all(urls.map((url) => downloadFile(new URL(url))))
 ---
 
-<div class="post-body">
-  <NotionBlocks blocks={blocks} isRoot={true} />
-</div>
+<script>
+  import 'zenn-embed-elements'
+</script>
 
-<style>
-  .post-body {
-    padding: 0.5rem 0;
-  }
-</style>
+<div class="znc" set:html={notemd} />
