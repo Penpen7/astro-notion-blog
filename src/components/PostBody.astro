@@ -117,4 +117,8 @@ const notemd = markdownHtml(md, {
 await Promise.all(urls.map((url) => downloadFile(new URL(url))))
 ---
 
+<script>
+  import 'zenn-embed-elements'
+</script>
+
 <div class="znc" set:html={notemd} />
